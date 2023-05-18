@@ -70,7 +70,7 @@ ClServer_MessageStruct function OnReceiveChatMessage( ClServer_MessageStruct msg
         {
             string errorMsg = "Trying to send a private chat, but target string \"" + namePiece + "\" cannot find any valid player"
             if ( foundSender ) // sender being removed causing no players found
-                errorMsg = "Trying to send a private chat, but targeting yourself"
+                errorMsg = "Trying to send a private chat, but it's targeting yourself"
 
             Chat_ServerPrivateMessage( sender, ANSI_COLOR_ERROR + errorMsg, false )
             return msgStruct
