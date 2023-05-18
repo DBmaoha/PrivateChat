@@ -1,5 +1,8 @@
 # PrivateChat
+
 Send a message that is only visible for you and target.
+
+Separent repo from https://github.com/DBmaoha/Super.Mixed.Game
 
 ## Available Convar
 
