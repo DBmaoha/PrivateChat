@@ -1,0 +1,138 @@
+global function Private_ChatMessage_Init
+
+const array<string> PRIVATE_CHAT_COMMANDS = 
+[
+    "!private",
+]
+
+const string ANSI_COLOR_END = "\x1b[0m"
+const string ANSI_COLOR_ANNOUNCE = "\x1b[38;5;11m"
+const string ANSI_COLOR_ERROR = "\x1b[38;5;196m"
+const string ANSI_COLOR_TEAM = "\x1b[38;5;81m"
+const string ANSI_COLOR_ENEMY = "\x1b[38;5;208m"
+
+void function Private_ChatMessage_Init()
+{
+    AddCallback_OnClientConnected( OnClientConnected )
+    AddCallback_OnReceivedSayTextMessage( OnReceiveChatMessage )
+}
+
+void function OnClientConnected( entity player )
+{
+    if ( GetConVarBool( "private_chat" ) )
+        Chat_ServerPrivateMessage( player, "Use " + ANSI_COLOR_ANNOUNCE + "!private <name> <content>" + ANSI_COLOR_END + " to send private chat message", false )
+}
+
+ClServer_MessageStruct function OnReceiveChatMessage( ClServer_MessageStruct msgStruct )
+{
+    bool usedPrivateChat = false
+    entity sender = msgStruct.player
+    string message = msgStruct.message
+    array<string> splitedMsg = split( message, " " ) // split with white space
+
+    // check command. should be placed at [0]
+    foreach ( string command in PRIVATE_CHAT_COMMANDS )
+    {
+        if ( splitedMsg[0] == command )
+        {
+            usedPrivateChat = true
+            splitedMsg.remove( 0 ) // remove command from message
+            break
+        }
+    }
+
+    // private chat triggered!
+    if ( usedPrivateChat )
+    {
+        msgStruct.shouldBlock = true // always block the message
+
+        if ( !GetConVarBool( "private_chat" ) ) // prevent player accidentally sending a message when they assuming this server enabled private chat
+        {
+            string errorMsg = ANSI_COLOR_ANNOUNCE + "This server has disabled private chat"
+            Chat_ServerPrivateMessage( sender, ANSI_COLOR_ERROR + errorMsg, false )
+            return msgStruct
+        }
+
+        if ( splitedMsg.len() <= 0 ) // wrong args!
+        {
+            string errorMsg = "Trying to send a private chat, but no players are targeted. Please enter the keyword of target player's name"
+            Chat_ServerPrivateMessage( sender, ANSI_COLOR_ERROR + errorMsg, false )
+            return msgStruct
+        }
+
+        string namePiece = splitedMsg[0]
+        array<entity> foundPlayers = GetPlayersFromNamePiece( namePiece )
+        // try to remove player from array
+        bool foundSender = foundPlayers.find( sender ) != -1
+        foundPlayers.removebyvalue( sender )
+        if ( foundPlayers.len() == 0 ) // no players found
+        {
+            string errorMsg = "Trying to send a private chat, but target string \"" + namePiece + "\" cannot find any valid player"
+            if ( foundSender ) // sender being removed causing no players found
+                errorMsg = "Trying to send a private chat, but targeting yourself"
+
+            Chat_ServerPrivateMessage( sender, ANSI_COLOR_ERROR + errorMsg, false )
+            return msgStruct
+        }
+        if ( foundPlayers.len() > 1 ) // found more than 1 player!
+        {
+            // create message
+            string foundPlayersName
+            foreach ( entity player in foundPlayers )
+                foundPlayersName += player.GetPlayerName() + "、"
+            string errorMsg = "Trying to send a private chat, but found multiple players with string \""+ namePiece + "\". They are：" + foundPlayersName
+
+            Chat_ServerPrivateMessage( sender, ANSI_COLOR_ERROR + errorMsg, false )
+            return msgStruct
+        }
+
+        entity targetPlayer = foundPlayers[0]
+        if ( !IsValid( targetPlayer ) )
+        {
+            string errorMsg = "Trying to send a Whisper, but target player is invalid"
+            Chat_ServerPrivateMessage( sender, ANSI_COLOR_ERROR + errorMsg, false )
+            return msgStruct
+        }
+
+        // all checks done
+        splitedMsg.remove( 0 ) // remove command from message
+
+        // get sender and receiver name
+        string senderName = sender.GetPlayerName()
+        string receiverName = targetPlayer.GetPlayerName()
+
+        if ( splitedMsg.len() <= 0 ) // no actual messages!
+        {
+            string errorMsg = "Trying to send private chat to" + receiverName + ", but no message given"
+            Chat_ServerPrivateMessage( sender, ANSI_COLOR_ERROR + errorMsg, false )
+            return msgStruct
+        }
+
+        // build messages again
+        message = ""
+        foreach ( string msgPiece in splitedMsg )
+            message += msgPiece + " " // re-add white space might be in player's chat
+        
+        // send out message
+        string senderTeamColor = sender.GetTeam() == targetPlayer.GetTeam() ? ANSI_COLOR_TEAM : ANSI_COLOR_ENEMY
+        string senderMessage = senderTeamColor + "Sending message to " + receiverName + ": " + ANSI_COLOR_END + message // notify sender who they send message to
+        Chat_ServerPrivateMessage( sender, senderMessage, true, false )
+        Chat_PrivateMessage( sender, targetPlayer, message, true ) // send to receiver
+        return msgStruct
+    }
+
+    return msgStruct // no modifications
+}
+
+array<entity> function GetPlayersFromNamePiece( string namePiece )
+{
+    array<entity> foundPlayers
+    foreach ( entity player in GetPlayerArray() )
+    {
+        string name = player.GetPlayerName()
+        if ( name.tolower().find( namePiece.tolower() ) != null )
+            foundPlayers.append( player )
+    }
+
+    return foundPlayers
+}

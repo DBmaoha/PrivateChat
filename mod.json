@@ -1,0 +1,23 @@
+{
+	"Name" : "Private Chat Message",
+	"Description" : "Send a message that is only visible for you and target",
+	"Version": "1.0",
+	"LoadPriority": 2,
+	
+	"ConVars": [
+		{
+			"Name": "private_chat",
+			"DefaultValue": "0"
+		}
+	],
+
+	"Scripts": [
+        {
+            "Path": "private_chat.gnut",
+            "RunOn": "SERVER && MP",
+			"ServerCallback": {
+				"Before": "Private_ChatMessage_Init"
+			}
+		}
+    ]
+}
