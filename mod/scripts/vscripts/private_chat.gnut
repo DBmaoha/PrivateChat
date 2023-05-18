@@ -3,6 +3,7 @@ global function Private_ChatMessage_Init
 const array<string> PRIVATE_CHAT_COMMANDS = 
 [
     "!private",
+    "!pc",
 ]
 
 const string ANSI_COLOR_END = "\x1b[0m"
@@ -20,7 +21,7 @@ void function Private_ChatMessage_Init()
 void function OnClientConnected( entity player )
 {
     if ( GetConVarBool( "private_chat" ) )
-        Chat_ServerPrivateMessage( player, "Use " + ANSI_COLOR_ANNOUNCE + "!private <name> <content>" + ANSI_COLOR_END + " to send private chat message", false )
+        Chat_ServerPrivateMessage( player, "Use " + ANSI_COLOR_ANNOUNCE + "!private/!pc <name> <content>" + ANSI_COLOR_END + " to send private chat message", false )
 }
 
 ClServer_MessageStruct function OnReceiveChatMessage( ClServer_MessageStruct msgStruct )
