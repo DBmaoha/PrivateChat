@@ -1,6 +1,6 @@
 # PrivateChat
 
-Send a message that is only visible for you and target.
+Send a chat message that is only visible for you and target.
 
 Separent repo from https://github.com/DBmaoha/Super.Mixed.Game
 
